@@ -678,3 +678,64 @@ function um_form_register_redirect() {
 	}
 }
 add_action( 'login_form_register', 'um_form_register_redirect', 10 );
+
+
+if ( !function_exists( 'um_profile_submitted_to_glabals' ) ) {
+
+	/**
+	 * Save submitted data to $GLOBALS
+	 * @param int $user_id
+	 * @param array $submitted
+	 */
+	function um_profile_submitted_to_glabals( $user_id, $submitted ) {
+		if ( $submitted ) {
+			$GLOBALS["um_user{$user_id}_profile_submitted"] = $submitted;
+
+			add_filter( 'um_profile_submitted_empty__filter', function ( $submitted ) {
+				if ( !$submitted ) {
+					$user_id = um_user( 'ID' );
+					$submitted = $GLOBALS["um_user{$user_id}_profile_submitted"];
+				}
+				return $submitted;
+			}, 20, 1 );
+		}
+		update_meta_cache( 'user', $user_id );
+	}
+
+}
+add_action( 'um_after_save_registration_details', 'um_profile_submitted_to_glabals', 10, 2 );
+
+
+if ( !function_exists( 'um_profile_slug_to_glabals' ) ) {
+
+	/**
+	 * Save profile_slug to $GLOBALS
+	 * @param string $user_in_url
+	 * @param int $user_id
+	 */
+	function um_profile_slug_to_glabals( $user_in_url, $user_id ) {
+		if ( $user_in_url ) {
+			$GLOBALS["um_user{$user_id}_profile_slug"] = $user_in_url;
+
+			add_filter( "get_user_metadata", function( $data, $object_id, $meta_key ) {
+				static $permalink_base = '';
+				if ( empty( $permalink_base ) ) {
+					$permalink_base = UM()->options()->get( 'permalink_base' );
+				}
+
+				static $user_id = 0;
+				if ( empty( $user_id ) ) {
+					$user_id = um_user( 'ID' );
+				}
+
+				if ( $object_id === $user_id && $meta_key === "um_user_profile_url_slug_{$permalink_base}" && !$data ) {
+					$data = $GLOBALS["um_user{$user_id}_profile_slug"];
+				}
+
+				return $data;
+			}, 20, 3 );
+		}
+	}
+
+}
+add_filter( 'um_change_user_profile_slug', 'um_profile_slug_to_glabals', 10, 2 );
