@@ -448,9 +448,36 @@ add_filter( 'um_prepare_user_query_args', 'um_prepare_user_query_args', 10, 2 );
  */
 function um_sortby_last_login( $query_args, $sortby ) {
 	if ( $sortby == 'last_login' ) {
-		$query_args['orderby'] = 'meta_value_num';
-		$query_args['order'] = 'desc';
-		$query_args['meta_key'] = '_um_last_login';
+
+		if( empty( $query_args['meta_query'] ) ){
+			$query_args['meta_query'] = array();
+		}
+
+		$meta_query = array_merge( $query_args['meta_query'], array(
+			array(
+				'relation' => 'OR',
+				array(
+					'_um_last_login' => array(
+						'key'     => '_um_last_login',
+						'compare' => 'EXISTS',
+						'type'    => 'UNSIGNED',
+					),
+				),
+				array(
+					'_um_last_login' => array(
+						'key'     => '_um_last_login',
+						'compare' => 'NOT EXISTS',
+						'type'    => 'UNSIGNED',
+					),
+				),
+			),
+		) );
+
+		$query_args = array_merge( $query_args, array(
+			'meta_query' => $meta_query,
+			'orderby'    => '_um_last_login',
+			'order'      => 'DESC',
+		) );
 	}
 	return $query_args;
 }
