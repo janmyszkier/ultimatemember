@@ -80,6 +80,7 @@ if ( ! class_exists( 'um\core\User' ) ) {
 
 			add_action( 'user_register', array( &$this, 'user_register_via_admin' ), 10, 1 );
 			add_action( 'user_register', array( &$this, 'set_gravatar' ), 11, 1 );
+			add_action( 'user_register', 'um_store_lastlogin_timestamp', 20, 1 );
 
 
 			add_action( 'added_existing_user', array( &$this, 'add_um_role_existing_user' ), 10, 2 );
