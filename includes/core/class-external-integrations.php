@@ -357,7 +357,13 @@ if ( ! class_exists( 'um\core\External_Integrations' ) ) {
 			return $subject;
 		}
 
-
+		/**
+		 * Filter: Try to locate email template translation using WPML
+		 * @hook um_locate_email_template
+		 * @param string	$template				Path to default template file
+		 * @param string	$template_name	Template slug
+		 * @return string									Path to translated template file
+		 */
 		function locate_email_template( $template, $template_name ) {
 			if ( ! $this->is_wpml_active() ) {
 				return $template;
@@ -373,21 +379,37 @@ if ( ! class_exists( 'um\core\External_Integrations' ) ) {
 			}
 
 			// check if there is template at theme folder
-			$template = locate_template( array(
+			$theme_template = locate_template( array(
 				trailingslashit( 'ultimate-member/email' ) . $lang . $template_name . '.php',
 				trailingslashit( 'ultimate-member/email' ) . $template_name . '.php'
 			) );
+			if( $theme_template ){
+				return $theme_template;
+			}
 
-			//if there isn't template at theme folder get template file from plugin dir
-			if ( ! $template ) {
-				$path = ! empty( UM()->mail()->path_by_slug[ $template_name ] ) ? UM()->mail()->path_by_slug[ $template_name ] : um_path . 'templates/email';
-				$template = trailingslashit( $path ) . $lang . $template_name . '.php';
+			// try to get template file from subdir
+			$subdir_template = str_replace( "$template_name.php", "$lang$template_name.php", $template );
+			if ( file_exists( $subdir_template ) ) {
+				return $subdir_template;
+			}
+
+			// try to get template file from plugin dir
+			$path = ! empty( UM()->mail()->path_by_slug[ $template_name ] ) ? UM()->mail()->path_by_slug[ $template_name ] : um_path . 'templates/email';
+			$plugin_template = trailingslashit( $path ) . $lang . $template_name . '.php';
+			if ( file_exists( $plugin_template ) ) {
+				return $plugin_template;
 			}
 
 			return $template;
 		}
 
 
+		/**
+		 * Filter: Change path for saving email template translation using WPML
+		 * @hook um_change_email_template_file
+		 * @param string $template				Path to default template file
+		 * @return string									Path to translated template file
+		 */
 		function change_email_template_file( $template ) {
 			if ( ! $this->is_wpml_active() ) {
 				return $template;
