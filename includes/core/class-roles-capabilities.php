@@ -592,38 +592,39 @@ if ( ! class_exists( 'um\core\Roles_Capabilities' ) ) {
 
 			um_fetch_user( get_current_user_id() );
 
-			$current_user_roles = UM()->roles()->get_all_user_roles( $user_id );
+			$priority_user_role = UM()->roles()->get_priority_user_role( $user_id );
+			//$current_user_roles = UM()->roles()->get_all_user_roles( $user_id );
 
-			switch( $cap ) {
-				case 'edit':
+			switch ( $cap ) {
+			  case 'edit':
 
-					if ( get_current_user_id() == $user_id ) {
-						if ( um_user( 'can_edit_profile' ) ) {
-							$return = 1;
-						} else {
-							$return = 0;
-						}
-					} else {
-						if ( ! um_user( 'can_edit_everyone' ) ) {
-							$return = 0;
-						} else {
-							if ( um_user( 'can_edit_roles' ) && ( empty( $current_user_roles ) || count( array_intersect( $current_user_roles, um_user( 'can_edit_roles' ) ) ) <= 0 ) ) {
-								$return = 0;
-							} else {
-								$return = 1;
-							}
-						}
-					}
+				if ( get_current_user_id() == $user_id ) {
+				  if ( !um_user( 'can_edit_profile' ) ) {
+					$return = 0;
+				  }
+				}
+				else {
+				  $can_edit_roles = (array) um_user( 'can_edit_roles' );
+				  //array_intersect( $current_user_roles, $can_edit_roles );
+				  if ( !um_user( 'can_edit_everyone' ) ) {
+					$return = 0;
+				  }
+				  elseif ( $can_edit_roles && ( !$priority_user_role || !in_array( $priority_user_role, $can_edit_roles ) ) ) {
+					$return = 0;
+				  }
+				}
+				break;
 
-					break;
-
-				case 'delete':
-					if ( ! um_user( 'can_delete_everyone' ) )
-						$return = 0;
-					elseif ( um_user( 'can_delete_roles' ) && ( empty( $current_user_roles ) || count( array_intersect( $current_user_roles, um_user( 'can_delete_roles' ) ) ) <= 0 ) )
-						$return = 0;
-					break;
-
+			  case 'delete':
+				$can_delete_roles = (array) um_user( 'can_delete_roles' );
+				//array_intersect( $current_user_roles, $can_delete_roles );
+				if ( !um_user( 'can_delete_everyone' ) ) {
+				  $return = 0;
+				}
+				elseif ( $can_delete_roles && ( !$priority_user_role || !in_array( $priority_user_role, $can_delete_roles ) ) ) {
+				  $return = 0;
+				}
+				break;
 			}
 
 			um_fetch_user( $user_id );
